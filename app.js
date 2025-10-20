@@ -117,17 +117,15 @@ function initUploadZones() {
         // Click to upload files
         uploadBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            e.preventDefault();
             fileInput.click();
         });
 
         // Click to upload folder
         folderBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            e.preventDefault();
             folderInput.click();
-        });
-
-        zone.addEventListener('click', () => {
-            fileInput.click();
         });
 
         // File input change
@@ -142,7 +140,7 @@ function initUploadZones() {
             e.target.value = ''; // Reset input
         });
 
-        // Drag and drop
+        // Drag and drop with folder support
         zone.addEventListener('dragover', (e) => {
             e.preventDefault();
             zone.classList.add('drag-over');
@@ -152,12 +150,101 @@ function initUploadZones() {
             zone.classList.remove('drag-over');
         });
 
-        zone.addEventListener('drop', (e) => {
+        zone.addEventListener('drop', async (e) => {
             e.preventDefault();
             zone.classList.remove('drag-over');
-            handleFiles(category, e.dataTransfer.files, fileListEl);
+
+            // Handle both files and folders
+            const items = e.dataTransfer.items;
+            if (items) {
+                const files = await getAllFilesFromDrop(items);
+                if (files.length > 0) {
+                    handleFilesWithPaths(category, files, fileListEl);
+                }
+            } else {
+                // Fallback for browsers that don't support items
+                handleFiles(category, e.dataTransfer.files, fileListEl);
+            }
         });
     });
+}
+
+// Helper functions for drag-and-drop folder support
+async function getAllFilesFromDrop(items) {
+    const files = [];
+    const entries = [];
+
+    // Collect all entries
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+            const entry = item.webkitGetAsEntry();
+            if (entry) {
+                entries.push(entry);
+            }
+        }
+    }
+
+    // Process all entries
+    for (const entry of entries) {
+        const entryFiles = await getFilesFromEntry(entry);
+        files.push(...entryFiles);
+    }
+
+    return files;
+}
+
+async function getFilesFromEntry(entry, path = '') {
+    const files = [];
+
+    if (entry.isFile) {
+        // Get the file
+        const file = await new Promise((resolve, reject) => {
+            entry.file(resolve, reject);
+        });
+        // Add relative path metadata
+        files.push({
+            file: file,
+            relativePath: path ? `${path}/${file.name}` : file.name
+        });
+    } else if (entry.isDirectory) {
+        // Read directory contents
+        const reader = entry.createReader();
+        const entries = await new Promise((resolve, reject) => {
+            reader.readEntries(resolve, reject);
+        });
+
+        // Recursively process directory contents
+        for (const childEntry of entries) {
+            const newPath = path ? `${path}/${entry.name}` : entry.name;
+            const childFiles = await getFilesFromEntry(childEntry, newPath);
+            files.push(...childFiles);
+        }
+    }
+
+    return files;
+}
+
+function handleFilesWithPaths(category, filesWithPaths, fileListEl) {
+    filesWithPaths.forEach(({ file, relativePath }) => {
+        // Check if file already exists
+        const exists = state.files[category].some(f =>
+            f.name === file.name && f.size === file.size && f.relativePath === relativePath
+        );
+
+        if (!exists) {
+            state.files[category].push({
+                file: file,
+                name: file.name,
+                size: file.size,
+                relativePath: relativePath
+            });
+        }
+    });
+
+    renderFileList(category, fileListEl);
+    updatePreview();
+    updateGenerateButton();
 }
 
 function handleFiles(category, fileList, fileListEl) {
