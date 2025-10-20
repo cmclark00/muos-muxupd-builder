@@ -50,7 +50,7 @@ function getTotalFileCount() {
 function getTotalFileSize() {
     let total = 0;
     Object.values(state.files).forEach(files => {
-        files.forEach(file => total += file.size);
+        files.forEach(fileData => total += fileData.size);
     });
     return total;
 }
@@ -109,13 +109,21 @@ function initUploadZones() {
     uploadZones.forEach(zone => {
         const category = zone.dataset.category;
         const fileInput = zone.querySelector('.file-input');
+        const folderInput = zone.querySelector('.folder-input');
         const uploadBtn = zone.querySelector('.upload-btn');
+        const folderBtn = zone.querySelector('.folder-btn');
         const fileListEl = zone.parentElement.querySelector('.file-list');
 
-        // Click to upload
+        // Click to upload files
         uploadBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             fileInput.click();
+        });
+
+        // Click to upload folder
+        folderBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            folderInput.click();
         });
 
         zone.addEventListener('click', () => {
@@ -124,6 +132,12 @@ function initUploadZones() {
 
         // File input change
         fileInput.addEventListener('change', (e) => {
+            handleFiles(category, e.target.files, fileListEl);
+            e.target.value = ''; // Reset input
+        });
+
+        // Folder input change
+        folderInput.addEventListener('change', (e) => {
             handleFiles(category, e.target.files, fileListEl);
             e.target.value = ''; // Reset input
         });
@@ -150,13 +164,34 @@ function handleFiles(category, fileList, fileListEl) {
     const files = Array.from(fileList);
 
     files.forEach(file => {
-        // Check if file already exists
+        // Extract relative path from webkitRelativePath or use just filename
+        let relativePath = '';
+        if (file.webkitRelativePath) {
+            // Get path relative to selected folder
+            const parts = file.webkitRelativePath.split('/');
+            // Remove first part (folder name) and join the rest
+            if (parts.length > 1) {
+                relativePath = parts.slice(1).join('/');
+            } else {
+                relativePath = file.name;
+            }
+        } else {
+            relativePath = file.name;
+        }
+
+        // Check if file already exists (by name and size)
         const exists = state.files[category].some(f =>
-            f.name === file.name && f.size === file.size
+            f.name === file.name && f.size === file.size && f.relativePath === relativePath
         );
 
         if (!exists) {
-            state.files[category].push(file);
+            // Store file with metadata
+            state.files[category].push({
+                file: file,
+                name: file.name,
+                size: file.size,
+                relativePath: relativePath
+            });
         }
     });
 
@@ -172,12 +207,13 @@ function renderFileList(category, fileListEl) {
         return;
     }
 
-    state.files[category].forEach((file, index) => {
+    state.files[category].forEach((fileData, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
+        const displayPath = fileData.relativePath || fileData.name;
         fileItem.innerHTML = `
-            <span class="file-name" title="${file.name}">${file.name}</span>
-            <span class="file-size">${formatBytes(file.size)}</span>
+            <span class="file-name" title="${displayPath}">${displayPath}</span>
+            <span class="file-size">${formatBytes(fileData.size)}</span>
             <button class="remove-btn" data-category="${category}" data-index="${index}">Remove</button>
         `;
         fileListEl.appendChild(fileItem);
@@ -237,15 +273,16 @@ function updatePreview() {
     Object.entries(state.files).forEach(([category, files]) => {
         if (files.length === 0) return;
 
-        let path;
+        let basePath;
         if (category === 'roms') {
-            path = CATEGORY_PATHS.roms(state.romSystem);
+            basePath = CATEGORY_PATHS.roms(state.romSystem);
         } else {
-            path = CATEGORY_PATHS[category]();
+            basePath = CATEGORY_PATHS[category]();
         }
 
-        files.forEach(file => {
-            const fullPath = `${path}/${file.name}`;
+        files.forEach(fileData => {
+            // Use relativePath to preserve folder structure
+            const fullPath = `${basePath}/${fileData.relativePath}`;
             addToTree(tree, fullPath.split('/').filter(p => p));
         });
     });
@@ -326,10 +363,11 @@ async function generateMuxupd() {
                 basePath = CATEGORY_PATHS[category]();
             }
 
-            for (const file of files) {
+            for (const fileData of files) {
+                // Use relativePath to preserve folder structure
                 // Remove leading slash for ZIP path
-                const zipPath = `${basePath}/${file.name}`.replace(/^\//, '');
-                zip.file(zipPath, file);
+                const zipPath = `${basePath}/${fileData.relativePath}`.replace(/^\//, '');
+                zip.file(zipPath, fileData.file);
 
                 processedFiles++;
                 const percent = Math.round((processedFiles / totalFiles) * 100);

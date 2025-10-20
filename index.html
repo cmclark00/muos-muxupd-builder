@@ -77,12 +77,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop ROM files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop ROM files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -95,12 +101,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop BIOS files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop BIOS files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -113,12 +125,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop save files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop save files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -131,12 +149,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop save state files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop save state files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -149,12 +173,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop theme files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop theme files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -167,12 +197,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop music files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop music files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -185,12 +221,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop screenshot files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop screenshot files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
@@ -203,12 +245,18 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop config files here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop config files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
-                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
-                        Choose Files
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
                     <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
                 </div>
                 <div class="file-list mt-4"></div>
             </section>
