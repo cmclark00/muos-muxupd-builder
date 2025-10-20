@@ -208,14 +208,25 @@ async function getFilesFromEntry(entry, path = '') {
             relativePath: path ? `${path}/${file.name}` : file.name
         });
     } else if (entry.isDirectory) {
-        // Read directory contents
+        // Read directory contents (must call readEntries multiple times)
         const reader = entry.createReader();
-        const entries = await new Promise((resolve, reject) => {
-            reader.readEntries(resolve, reject);
-        });
+        let allEntries = [];
+
+        // Keep reading until we get all entries
+        while (true) {
+            const entries = await new Promise((resolve, reject) => {
+                reader.readEntries(resolve, reject);
+            });
+
+            if (entries.length === 0) {
+                break; // No more entries
+            }
+
+            allEntries.push(...entries);
+        }
 
         // Recursively process directory contents
-        for (const childEntry of entries) {
+        for (const childEntry of allEntries) {
             const newPath = path ? `${path}/${entry.name}` : entry.name;
             const childFiles = await getFilesFromEntry(childEntry, newPath);
             files.push(...childFiles);
