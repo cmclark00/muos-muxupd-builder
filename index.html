@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>muOS .muxupd Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'muos-yellow': '#FFC107',
+                        'muos-dark': '#1a1a1a',
+                        'muos-gray': '#2a2a2a',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-muos-dark text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-muos-gray border-b-4 border-muos-yellow py-6 mb-8">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl font-bold text-muos-yellow mb-2">muOS .muxupd Builder</h1>
+            <p class="text-gray-400">Create custom archive files with your ROMs, BIOS, and settings</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pb-12">
+        <!-- SD Card Selection -->
+        <section class="mb-8 bg-muos-gray rounded-lg p-6 border border-gray-700">
+            <h2 class="text-2xl font-semibold text-muos-yellow mb-4">Storage Location</h2>
+            <p class="text-gray-400 mb-4 text-sm">Select where you want your content installed:</p>
+            <div class="flex gap-4">
+                <button id="sd1-btn" class="sd-selector active flex-1 bg-muos-yellow text-muos-dark font-semibold py-3 px-6 rounded-lg transition-all hover:bg-yellow-500">
+                    SD1 (/mnt/mmc)
+                </button>
+                <button id="sd2-btn" class="sd-selector flex-1 bg-gray-700 text-gray-300 font-semibold py-3 px-6 rounded-lg transition-all hover:bg-gray-600">
+                    SD2 (/mnt/sdcard)
+                </button>
+            </div>
+            <div id="current-path" class="mt-4 text-sm text-gray-500">
+                Current base path: <span class="text-muos-yellow font-mono">/mnt/mmc</span>
+            </div>
+        </section>
+
+        <!-- Content Upload Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- ROMs Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">ROMs</h3>
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-2">System:</label>
+                    <select id="rom-system" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none">
+                        <option value="custom">Custom System Name</option>
+                        <option value="arcade">Arcade</option>
+                        <option value="atari2600">Atari 2600</option>
+                        <option value="c64">Commodore 64</option>
+                        <option value="dreamcast">Sega Dreamcast</option>
+                        <option value="gb">Game Boy</option>
+                        <option value="gba">Game Boy Advance</option>
+                        <option value="gbc">Game Boy Color</option>
+                        <option value="genesis">Sega Genesis</option>
+                        <option value="n64">Nintendo 64</option>
+                        <option value="nds">Nintendo DS</option>
+                        <option value="nes">Nintendo NES</option>
+                        <option value="psx">Sony PlayStation</option>
+                        <option value="snes">Super Nintendo</option>
+                    </select>
+                    <input type="text" id="rom-system-custom" placeholder="Enter custom system name" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none mt-2 hidden">
+                </div>
+                <div class="upload-zone" data-category="roms">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop ROM files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- BIOS Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">BIOS Files</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/bios/</p>
+                <div class="upload-zone" data-category="bios">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop BIOS files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Save Files Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Save Files</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/save/file/</p>
+                <div class="upload-zone" data-category="saves">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop save files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Save States Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Save States</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/save/state/</p>
+                <div class="upload-zone" data-category="states">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop save state files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Themes Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Themes</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/theme/</p>
+                <div class="upload-zone" data-category="themes">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop theme files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Music Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Music</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/music/</p>
+                <div class="upload-zone" data-category="music">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop music files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Screenshots Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Screenshots</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/screenshot/</p>
+                <div class="upload-zone" data-category="screenshots">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop screenshot files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Config Files Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Config Files</h3>
+                <p class="text-xs text-gray-500 mb-3">→ MUOS/info/config/</p>
+                <div class="upload-zone" data-category="config">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop config files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                        Choose Files
+                    </button>
+                    <input type="file" class="file-input" multiple hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+        </div>
+
+        <!-- Preview Section -->
+        <section class="bg-muos-gray rounded-lg p-6 border border-gray-700 mb-8">
+            <h2 class="text-2xl font-semibold text-muos-yellow mb-4">Archive Preview</h2>
+            <div id="archive-stats" class="mb-4 text-sm text-gray-400">
+                <span class="mr-4">Total files: <span class="text-muos-yellow font-semibold" id="total-files">0</span></span>
+                <span>Total size: <span class="text-muos-yellow font-semibold" id="total-size">0 B</span></span>
+            </div>
+            <div id="preview-tree" class="font-mono text-sm bg-gray-800 p-4 rounded max-h-96 overflow-auto">
+                <p class="text-gray-500 italic">No files added yet...</p>
+            </div>
+        </section>
+
+        <!-- Generate Button -->
+        <div class="text-center">
+            <button id="generate-btn" class="bg-muos-yellow text-muos-dark font-bold text-lg px-8 py-4 rounded-lg hover:bg-yellow-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Generate .muxupd File
+            </button>
+            <div id="progress" class="mt-4 hidden">
+                <div class="bg-gray-700 rounded-full h-4 overflow-hidden">
+                    <div id="progress-bar" class="bg-muos-yellow h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="text-gray-400 text-sm mt-2" id="progress-text">Generating archive...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-muos-gray border-t border-gray-700 py-6 mt-12">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>muOS .muxupd Builder | For the muOS Community</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
