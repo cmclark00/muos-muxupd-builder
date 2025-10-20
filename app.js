@@ -238,9 +238,15 @@ async function getFilesFromEntry(entry, path = '') {
 
 function handleFilesWithPaths(category, filesWithPaths, fileListEl) {
     filesWithPaths.forEach(({ file, relativePath }) => {
+        // For ROMs, strip the system folder if it matches the selected system
+        let finalPath = relativePath;
+        if (category === 'roms') {
+            finalPath = stripSystemFolderIfMatch(relativePath, state.romSystem);
+        }
+
         // Check if file already exists
         const exists = state.files[category].some(f =>
-            f.name === file.name && f.size === file.size && f.relativePath === relativePath
+            f.name === file.name && f.size === file.size && f.relativePath === finalPath
         );
 
         if (!exists) {
@@ -248,7 +254,7 @@ function handleFilesWithPaths(category, filesWithPaths, fileListEl) {
                 file: file,
                 name: file.name,
                 size: file.size,
-                relativePath: relativePath
+                relativePath: finalPath
             });
         }
     });
@@ -256,6 +262,22 @@ function handleFilesWithPaths(category, filesWithPaths, fileListEl) {
     renderFileList(category, fileListEl);
     updatePreview();
     updateGenerateButton();
+}
+
+// Helper to strip duplicate system folder from ROM paths
+function stripSystemFolderIfMatch(relativePath, systemName) {
+    const parts = relativePath.split('/');
+    if (parts.length > 1) {
+        // Check if first folder matches system name (case-insensitive)
+        const firstFolder = parts[0].toLowerCase();
+        const system = systemName.toLowerCase();
+
+        if (firstFolder === system) {
+            // Remove the first folder and return the rest
+            return parts.slice(1).join('/');
+        }
+    }
+    return relativePath;
 }
 
 function handleFiles(category, fileList, fileListEl) {
@@ -275,6 +297,11 @@ function handleFiles(category, fileList, fileListEl) {
             }
         } else {
             relativePath = file.name;
+        }
+
+        // For ROMs, strip the system folder if it matches the selected system
+        if (category === 'roms') {
+            relativePath = stripSystemFolderIfMatch(relativePath, state.romSystem);
         }
 
         // Check if file already exists (by name and size)
