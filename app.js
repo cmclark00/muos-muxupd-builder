@@ -488,9 +488,22 @@ async function generateMuxupd() {
     progress.classList.remove('hidden');
 
     try {
-        const zip = new JSZip();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = `Custom_muOS_${timestamp}.muxupd`;
+
+        // Create a writable stream to download the file directly to disk
+        const fileStream = streamSaver.createWriteStream(filename);
+
+        // Create ZIP writer with the file stream
+        const zipWriter = new zip.ZipWriter(fileStream, {
+            level: 6,  // Compression level (0-9)
+            bufferedWrite: true
+        });
+
         let processedFiles = 0;
         const totalFiles = getTotalFileCount();
+
+        progressText.textContent = 'Adding files to archive...';
 
         // Add all files to ZIP
         for (const [category, files] of Object.entries(state.files)) {
@@ -508,7 +521,9 @@ async function generateMuxupd() {
                 // Use relativePath to preserve folder structure
                 // Remove leading slash for ZIP path
                 const zipPath = `${basePath}/${fileData.relativePath}`.replace(/^\//, '');
-                zip.file(zipPath, fileData.file);
+
+                // Add file to ZIP with streaming (BlobReader reads the file without loading it all into memory)
+                await zipWriter.add(zipPath, new zip.BlobReader(fileData.file));
 
                 processedFiles++;
                 const percent = Math.round((processedFiles / totalFiles) * 100);
@@ -517,52 +532,9 @@ async function generateMuxupd() {
             }
         }
 
-        // Generate ZIP with streaming to avoid memory limits
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const filename = `Custom_muOS_${timestamp}.muxupd`;
-
-        progressText.textContent = 'Generating archive...';
-
-        // Create a writable stream to download the file
-        const fileStream = streamSaver.createWriteStream(filename);
-        const writer = fileStream.getWriter();
-
-        // Generate the ZIP as a Node stream
-        const zipStream = zip.generateInternalStream({
-            type: 'uint8array',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 },
-            streamFiles: true  // Process files one at a time to avoid memory limits
-        });
-
-        // Convert Node.js stream to Web Stream and pipe to file
-        let bytesWritten = 0;
-        zipStream
-            .on('data', async function(data, metadata) {
-                try {
-                    await writer.write(data);
-                    bytesWritten += data.length;
-                    const percent = Math.round(metadata.percent || 0);
-                    progressBar.style.width = `${percent}%`;
-                    progressText.textContent = `Compressing... ${percent}%`;
-                } catch (err) {
-                    console.error('Write error:', err);
-                }
-            })
-            .on('error', function(err) {
-                writer.abort(err);
-                throw err;
-            })
-            .on('end', function() {
-                writer.close();
-            })
-            .resume();
-
-        // Wait for the stream to finish
-        await new Promise((resolve, reject) => {
-            zipStream.on('end', resolve);
-            zipStream.on('error', reject);
-        });
+        // Close the ZIP writer (this finalizes the archive and writes it to the stream)
+        progressText.textContent = 'Finalizing archive...';
+        await zipWriter.close();
 
         // Success message
         progressBar.style.width = '100%';

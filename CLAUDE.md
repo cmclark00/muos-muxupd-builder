@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A browser-based tool for creating custom `.muxupd` archive files for muOS (MustardOS). This is a **pure client-side application** with no backend - all ZIP generation happens in the browser using JSZip.
+A browser-based tool for creating custom `.muxupd` archive files for muOS (MustardOS). This is a **pure client-side application** with no backend - all ZIP generation happens in the browser using zip.js with streaming support for large archives (4GB+).
 
 ## Running & Testing
 
@@ -25,7 +25,7 @@ npx serve
 - Hosted on GitHub Pages at: https://cmclark00.github.io/muos-muxupd-builder/
 - Any push to `main` branch automatically updates the live site within 1-2 minutes
 
-**No build process** - The app uses CDN-hosted dependencies (Tailwind CSS, JSZip). Edit files and refresh browser to see changes.
+**No build process** - The app uses CDN-hosted dependencies (Tailwind CSS, zip.js, StreamSaver.js). Edit files and refresh browser to see changes.
 
 ## Architecture
 
@@ -82,14 +82,15 @@ mnt/
 4. `updatePreview()` - Rebuilds tree view of final archive structure
 5. `updateGenerateButton()` - Enables/disables generate button based on file count
 
-**Archive Generation (app.js:304-388)**
-1. Creates JSZip instance
-2. Iterates through `state.files` by category
-3. For each file, computes correct path using `CATEGORY_PATHS`
-4. Strips leading slash (ZIP paths are relative)
-5. Adds file to ZIP with path: `mnt/[mmc|sdcard]/...`
-6. Generates ZIP blob with DEFLATE compression (level 6)
-7. Triggers browser download with timestamp filename: `Custom_muOS_[timestamp].muxupd`
+**Archive Generation (app.js:481-561)**
+1. Creates StreamSaver writable stream (writes directly to disk, bypassing memory limits)
+2. Creates zip.js ZipWriter with the stream
+3. Iterates through `state.files` by category
+4. For each file, computes correct path using `CATEGORY_PATHS`
+5. Strips leading slash (ZIP paths are relative)
+6. Adds file to ZIP with path: `mnt/[mmc|sdcard]/...` using BlobReader for streaming
+7. Closes ZipWriter (finalizes archive with DEFLATE compression level 6)
+8. File streams directly to disk - supports 4GB+ archives without memory errors
 
 **Tree Preview (app.js:256-295)**
 - `addToTree()` - Recursively builds nested object representing filesystem tree
@@ -139,7 +140,7 @@ That's it! The existing file upload, preview, and ZIP generation logic will auto
 Edit the `<select id="rom-system">` dropdown in index.html (~line 90-110).
 
 **Changing compression level:**
-In `generateMuxupd()` function, modify `compressionOptions: { level: 6 }` (range: 0-9).
+In `generateMuxupd()` function, modify the `level` option in `new zip.ZipWriter(fileStream, { level: 6 })` (range: 0-9).
 
 **Adjusting 2GB warning threshold:**
 In `updatePreview()` function (app.js:221), change `2 * 1024 * 1024 * 1024`.
@@ -152,8 +153,9 @@ In `handleFiles()` function (app.js:154), currently checks name+size. Modify thi
 Requires modern browser with:
 - File API for uploads
 - Drag & Drop API
-- JSZip for client-side ZIP generation
-- No polyfills needed for target browsers (Chrome, Firefox, Safari, Edge)
+- Streams API (for large file handling)
+- zip.js + StreamSaver.js for streaming ZIP generation (handles 4GB+ archives)
+- Works best in Chrome, Firefox, Edge (Safari may have limitations with large files)
 
 ## Deployment
 
