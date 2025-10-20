@@ -250,12 +250,19 @@ function handleFilesWithPaths(category, filesWithPaths, fileListEl) {
         );
 
         if (!exists) {
-            state.files[category].push({
+            const fileData = {
                 file: file,
                 name: file.name,
                 size: file.size,
                 relativePath: finalPath
-            });
+            };
+
+            // Store the ROM system with ROM files
+            if (category === 'roms') {
+                fileData.romSystem = state.romSystem;
+            }
+
+            state.files[category].push(fileData);
         }
     });
 
@@ -311,12 +318,19 @@ function handleFiles(category, fileList, fileListEl) {
 
         if (!exists) {
             // Store file with metadata
-            state.files[category].push({
+            const fileData = {
                 file: file,
                 name: file.name,
                 size: file.size,
                 relativePath: relativePath
-            });
+            };
+
+            // Store the ROM system with ROM files
+            if (category === 'roms') {
+                fileData.romSystem = state.romSystem;
+            }
+
+            state.files[category].push(fileData);
         }
     });
 
@@ -398,14 +412,15 @@ function updatePreview() {
     Object.entries(state.files).forEach(([category, files]) => {
         if (files.length === 0) return;
 
-        let basePath;
-        if (category === 'roms') {
-            basePath = CATEGORY_PATHS.roms(state.romSystem);
-        } else {
-            basePath = CATEGORY_PATHS[category]();
-        }
-
         files.forEach(fileData => {
+            let basePath;
+            if (category === 'roms') {
+                // Use the ROM system stored with the file, not the global state
+                basePath = CATEGORY_PATHS.roms(fileData.romSystem || state.romSystem);
+            } else {
+                basePath = CATEGORY_PATHS[category]();
+            }
+
             // Use relativePath to preserve folder structure
             const fullPath = `${basePath}/${fileData.relativePath}`;
             addToTree(tree, fullPath.split('/').filter(p => p));
@@ -481,14 +496,15 @@ async function generateMuxupd() {
         for (const [category, files] of Object.entries(state.files)) {
             if (files.length === 0) continue;
 
-            let basePath;
-            if (category === 'roms') {
-                basePath = CATEGORY_PATHS.roms(state.romSystem);
-            } else {
-                basePath = CATEGORY_PATHS[category]();
-            }
-
             for (const fileData of files) {
+                let basePath;
+                if (category === 'roms') {
+                    // Use the ROM system stored with the file, not the global state
+                    basePath = CATEGORY_PATHS.roms(fileData.romSystem || state.romSystem);
+                } else {
+                    basePath = CATEGORY_PATHS[category]();
+                }
+
                 // Use relativePath to preserve folder structure
                 // Remove leading slash for ZIP path
                 const zipPath = `${basePath}/${fileData.relativePath}`.replace(/^\//, '');
@@ -501,30 +517,52 @@ async function generateMuxupd() {
             }
         }
 
-        // Generate ZIP
-        progressText.textContent = 'Generating archive...';
-        const blob = await zip.generateAsync({
-            type: 'blob',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 }
-        }, (metadata) => {
-            const percent = Math.round(metadata.percent);
-            progressBar.style.width = `${percent}%`;
-            progressText.textContent = `Compressing... ${percent}%`;
-        });
-
-        // Download
+        // Generate ZIP with streaming to avoid memory limits
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
         const filename = `Custom_muOS_${timestamp}.muxupd`;
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        progressText.textContent = 'Generating archive...';
+
+        // Create a writable stream to download the file
+        const fileStream = streamSaver.createWriteStream(filename);
+        const writer = fileStream.getWriter();
+
+        // Generate the ZIP as a Node stream
+        const zipStream = zip.generateInternalStream({
+            type: 'uint8array',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 },
+            streamFiles: true  // Process files one at a time to avoid memory limits
+        });
+
+        // Convert Node.js stream to Web Stream and pipe to file
+        let bytesWritten = 0;
+        zipStream
+            .on('data', async function(data, metadata) {
+                try {
+                    await writer.write(data);
+                    bytesWritten += data.length;
+                    const percent = Math.round(metadata.percent || 0);
+                    progressBar.style.width = `${percent}%`;
+                    progressText.textContent = `Compressing... ${percent}%`;
+                } catch (err) {
+                    console.error('Write error:', err);
+                }
+            })
+            .on('error', function(err) {
+                writer.abort(err);
+                throw err;
+            })
+            .on('end', function() {
+                writer.close();
+            })
+            .resume();
+
+        // Wait for the stream to finish
+        await new Promise((resolve, reject) => {
+            zipStream.on('end', resolve);
+            zipStream.on('error', reject);
+        });
 
         // Success message
         progressBar.style.width = '100%';
