@@ -238,10 +238,23 @@ async function getFilesFromEntry(entry, path = '') {
 
 function handleFilesWithPaths(category, filesWithPaths, fileListEl) {
     filesWithPaths.forEach(({ file, relativePath }) => {
-        // For ROMs, strip the system folder if it matches the selected system
+        // Strip the top-level folder from the path for all categories
         let finalPath = relativePath;
+
         if (category === 'roms') {
+            // For ROMs, strip the system folder if it matches the selected system
             finalPath = stripSystemFolderIfMatch(relativePath, state.romSystem);
+        } else {
+            // For other categories, strip the first folder level from drag-and-drop
+            // This ensures dragged folders don't create an extra nested level
+            const parts = relativePath.split('/');
+            if (parts.length > 1) {
+                // If there's a folder structure, remove the first folder level
+                finalPath = parts.slice(1).join('/');
+            } else {
+                // Single file, keep as-is
+                finalPath = relativePath;
+            }
         }
 
         // Check if file already exists
