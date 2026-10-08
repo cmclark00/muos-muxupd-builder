@@ -6,6 +6,8 @@
     <title>muOS .muxupd Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.34/dist/zip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4.12.0/dist/sha256.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4.12.0/dist/md5.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/ponyfill.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -27,8 +29,11 @@
     <!-- Header -->
     <header class="bg-muos-gray border-b-4 border-muos-yellow py-6 mb-8">
         <div class="container mx-auto px-4">
-            <h1 class="text-4xl font-bold text-muos-yellow mb-2">muOS .muxupd Builder</h1>
-            <p class="text-gray-400">Create custom archive files with your ROMs, BIOS, and settings</p>
+            <div class="flex flex-wrap items-center gap-3 mb-2">
+                <h1 class="text-4xl font-bold text-muos-yellow">muOS .muxupd Builder</h1>
+                <span class="version-badge">For MustardOS <span class="muos-version"></span></span>
+            </div>
+            <p class="text-gray-400">Create custom archive files with your ROMs, BIOS, saves, themes, apps and artwork</p>
         </div>
     </header>
 
@@ -48,6 +53,10 @@
             <div id="current-path" class="mt-4 text-sm text-gray-500">
                 Current base path: <span class="text-muos-yellow font-mono">/mnt/mmc</span>
             </div>
+            <div id="sd2-note" class="info-message mt-4 hidden">
+                <p>SD2 must be inserted when you install the archive, or the files will be written to internal storage.</p>
+                <p class="mt-2">When SD2 has a <span class="font-mono">MUOS/</span> folder (bios, save, theme, music, and so on), muOS uses it instead of SD1's, so this archive will make SD2's copy the active one.</p>
+            </div>
         </section>
 
         <!-- Content Upload Sections -->
@@ -55,25 +64,12 @@
             <!-- ROMs Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">ROMs</h3>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono" id="rom-folder-path">ROMS/nes/</span></p>
                 <div class="mb-4">
-                    <label class="block text-sm text-gray-400 mb-2">System:</label>
-                    <select id="rom-system" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none">
-                        <option value="custom">Custom System Name</option>
-                        <option value="arcade">Arcade</option>
-                        <option value="atari2600">Atari 2600</option>
-                        <option value="c64">Commodore 64</option>
-                        <option value="dreamcast">Sega Dreamcast</option>
-                        <option value="gb">Game Boy</option>
-                        <option value="gba">Game Boy Advance</option>
-                        <option value="gbc">Game Boy Color</option>
-                        <option value="genesis">Sega Genesis</option>
-                        <option value="n64">Nintendo 64</option>
-                        <option value="nds">Nintendo DS</option>
-                        <option value="nes">Nintendo NES</option>
-                        <option value="psx">Sony PlayStation</option>
-                        <option value="snes">Super Nintendo</option>
-                    </select>
-                    <input type="text" id="rom-system-custom" placeholder="Enter custom system name" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none mt-2 hidden">
+                    <label for="rom-system" class="block text-sm text-gray-400 mb-2">System:</label>
+                    <select id="rom-system" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none"></select>
+                    <input type="text" id="rom-system-custom" placeholder="Enter custom folder name" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none mt-2 hidden">
+                    <div id="rom-system-info" class="text-xs text-gray-400 mt-2"></div>
                 </div>
                 <div class="upload-zone" data-category="roms">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +94,8 @@
             <!-- BIOS Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">BIOS Files</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/bios/</p>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/bios/</span></p>
+                <p class="text-xs text-gray-400 mb-3">BIOS files muOS knows are checked for the right name, location and MD5.</p>
                 <div class="upload-zone" data-category="bios">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -122,7 +119,8 @@
             <!-- Save Files Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">Save Files</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/save/file/</p>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/save/file/</span></p>
+                <p class="text-xs text-gray-400 mb-3">muOS sorts saves into a folder per core (e.g. <span class="font-mono">file/mGBA/</span>). Drop your whole <span class="font-mono">file</span> folder to keep them.</p>
                 <div class="upload-zone" data-category="saves">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -146,7 +144,8 @@
             <!-- Save States Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">Save States</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/save/state/</p>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/save/state/</span></p>
+                <p class="text-xs text-gray-400 mb-3">Sorted per core like save files. Drop your whole <span class="font-mono">state</span> folder.</p>
                 <div class="upload-zone" data-category="states">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -170,12 +169,81 @@
             <!-- Themes Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">Themes</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/theme/</p>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/theme/</span></p>
+                <p class="text-xs text-gray-400 mb-3">Andromeda stores themes as folders. <span class="font-mono">.muxthm</span> files are unpacked into <span class="font-mono">theme/&lt;name&gt;/</span> for you.</p>
                 <div class="upload-zone" data-category="themes">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-400 mb-2">Drag & drop theme files or folders here</p>
+                    <p class="text-gray-400 mb-2">Drag & drop theme folders or .muxthm files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
+                    <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Applications Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Applications</h3>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/application/</span></p>
+                <p class="text-xs text-gray-400 mb-3">Each app is a folder with a <span class="font-mono">mux_launch.sh</span>. <span class="font-mono">.muxapp</span> files are unpacked for you.</p>
+                <div class="upload-zone" data-category="applications">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop app folders or .muxapp files here</p>
+                    <p class="text-sm text-gray-500 mb-3">or</p>
+                    <div class="flex gap-2">
+                        <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
+                            Choose Files
+                        </button>
+                        <button class="folder-btn bg-gray-700 text-gray-100 px-4 py-2 rounded font-semibold hover:bg-gray-600 transition-all">
+                            Choose Folder
+                        </button>
+                    </div>
+                    <input type="file" class="file-input" multiple hidden>
+                    <input type="file" class="folder-input" webkitdirectory hidden>
+                </div>
+                <div class="file-list mt-4"></div>
+            </section>
+
+            <!-- Artwork (Catalogue) Section -->
+            <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Artwork</h3>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono" id="catalogue-path">MUOS/info/catalogue/</span></p>
+                <div class="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label for="catalogue-system" class="block text-sm text-gray-400 mb-2">System:</label>
+                        <select id="catalogue-system" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none"></select>
+                    </div>
+                    <div>
+                        <label for="catalogue-type" class="block text-sm text-gray-400 mb-2">Type:</label>
+                        <select id="catalogue-type" class="w-full bg-gray-700 text-gray-100 rounded px-3 py-2 border border-gray-600 focus:border-muos-yellow focus:outline-none">
+                            <option value="box">Box art</option>
+                            <option value="grid">Grid</option>
+                            <option value="preview">Preview</option>
+                            <option value="splash">Splash</option>
+                            <option value="text">Description text</option>
+                            <option value="manual">Manual</option>
+                            <option value="video">Video</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">Name each file after its ROM without the extension, e.g. <span class="font-mono">Super Mario Bros (USA).png</span>.</p>
+                <div class="upload-zone" data-category="catalogue">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-400 mb-2">Drag & drop artwork files or folders here</p>
                     <p class="text-sm text-gray-500 mb-3">or</p>
                     <div class="flex gap-2">
                         <button class="upload-btn bg-muos-yellow text-muos-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition-all">
@@ -194,7 +262,7 @@
             <!-- Music Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">Music</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/music/</p>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/music/</span></p>
                 <div class="upload-zone" data-category="music">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -218,7 +286,7 @@
             <!-- Screenshots Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
                 <h3 class="text-xl font-semibold text-muos-yellow mb-3">Screenshots</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/screenshot/</p>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">MUOS/screenshot/</span></p>
                 <div class="upload-zone" data-category="screenshots">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -239,10 +307,11 @@
                 <div class="file-list mt-4"></div>
             </section>
 
-            <!-- Config Files Section -->
+            <!-- RetroArch Config Files Section -->
             <section class="bg-muos-gray rounded-lg p-6 border border-gray-700">
-                <h3 class="text-xl font-semibold text-muos-yellow mb-3">Config Files</h3>
-                <p class="text-xs text-gray-500 mb-3">→ MUOS/info/config/</p>
+                <h3 class="text-xl font-semibold text-muos-yellow mb-3">RetroArch Configs</h3>
+                <p class="text-xs text-gray-500 mb-3">→ <span class="font-mono">/opt/muos/share/info/config/</span></p>
+                <p class="text-xs text-gray-400 mb-3">Installed to the system partition, not the SD card selected above.</p>
                 <div class="upload-zone" data-category="config">
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -269,11 +338,14 @@
             <h2 class="text-2xl font-semibold text-muos-yellow mb-4">Archive Preview</h2>
             <div id="archive-stats" class="mb-4 text-sm text-gray-400">
                 <span class="mr-4">Total files: <span class="text-muos-yellow font-semibold" id="total-files">0</span></span>
-                <span>Total size: <span class="text-muos-yellow font-semibold" id="total-size">0 B</span></span>
+                <span class="mr-4">Total size: <span class="text-muos-yellow font-semibold" id="total-size">0 B</span></span>
+                <span>Archives: <span class="text-muos-yellow font-semibold" id="total-parts">0</span></span>
             </div>
+            <div id="archive-notices"></div>
             <div id="preview-tree" class="font-mono text-sm bg-gray-800 p-4 rounded max-h-96 overflow-auto">
                 <p class="text-gray-500 italic">No files added yet...</p>
             </div>
+            <p class="text-xs text-gray-500 mt-3">Each archive includes a <span class="font-mono">manifest.sha256</span>. muOS uses it to check every file before installing.</p>
         </section>
 
         <!-- Generate Button -->
@@ -287,16 +359,18 @@
                 </div>
                 <p class="text-gray-400 text-sm mt-2" id="progress-text">Generating archive...</p>
             </div>
+            <p class="text-sm text-gray-500 mt-4">Copy the file to the <span class="font-mono">ARCHIVE</span> folder on your SD card, then install it from <span class="text-gray-300">Archive Manager</span> on your device.</p>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="bg-muos-gray border-t border-gray-700 py-6 mt-12">
         <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
-            <p>muOS .muxupd Builder | For the muOS Community</p>
+            <p>muOS .muxupd Builder | For the muOS Community | System data from MustardOS <span class="muos-version"></span></p>
         </div>
     </footer>
 
+    <script src="systems.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
